@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { StorageProvider } from '@/contexts';
+import { initializeSystemWithAdmin } from '@/utils/createDefaultAdmin';
 
 // ============================================================================
 // COMPONENTE PRINCIPAL
@@ -19,6 +20,9 @@ export default function RootLayout() {
   useEffect(() => {
     // Configurações iniciais do app
     console.log('App iniciado com tema:', colorScheme);
+    
+    // Inicializa o sistema com admin padrão se necessário
+    initializeSystemWithAdmin();
   }, [colorScheme]);
 
   // ============================================================================
@@ -30,6 +34,12 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       <Stack>
         <Stack.Screen 
+          name="index" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
           name="(tabs)" 
           options={{ 
             headerShown: false,
@@ -37,24 +47,9 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen 
-          name="auth/login" 
+          name="auth" 
           options={{ 
             headerShown: false,
-            title: 'Login',
-          }} 
-        />
-        <Stack.Screen 
-          name="auth/register" 
-          options={{ 
-            headerShown: false,
-            title: 'Cadastro',
-          }} 
-        />
-        <Stack.Screen 
-          name="auth/forgot-password" 
-          options={{ 
-            headerShown: false,
-            title: 'Recuperar Senha',
           }} 
         />
       </Stack>

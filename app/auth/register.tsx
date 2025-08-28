@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 
 import { Colors } from '@/constants/Colors';
+import { useAuthTokens, useUserProfile } from '@/contexts';
+import { useClients } from '@/hooks/useClients';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 // ============================================================================
@@ -26,6 +28,7 @@ interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
+  acceptTerms: boolean;
 }
 
 interface RegisterErrors {
@@ -33,6 +36,7 @@ interface RegisterErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  acceptTerms?: string;
 }
 
 // ============================================================================
@@ -48,17 +52,24 @@ export default function RegisterScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const { width, height } = Dimensions.get('window');
   
+  // Hooks de storage
+  const { updateUserProfile } = useUserProfile();
+  const { updateAuthTokens } = useAuthTokens();
+  
+  // Hook de clientes
+  const { createClient } = useClients();
+  
   const [form, setForm] = useState<RegisterForm>({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    acceptTerms: false,
   });
   const [errors, setErrors] = useState<RegisterErrors>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   // ============================================================================
   // FUNÇÕES
@@ -91,8 +102,8 @@ export default function RegisterScreen() {
       newErrors.confirmPassword = 'As senhas não coincidem';
     }
 
-    if (!acceptedTerms) {
-      newErrors.confirmPassword = 'Você deve aceitar os termos e condições';
+    if (!form.acceptTerms) {
+      newErrors.acceptTerms = 'Você deve aceitar os termos e condições';
     }
 
     setErrors(newErrors);
@@ -104,28 +115,90 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
+      // Simula chamada de API
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Cria o cliente no sistema
+      const newClient = await createClient({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: '',
+        company: '',
+        role: 'revendedor',
+        isAdmin: false, // Por padrão, novos usuários não são admin
+        status: 'active',
+        avatar: 'https://example.com/default-avatar.jpg',
+        lastLogin: new Date(),
+        preferences: {
+          theme: 'system',
+          language: 'pt-BR',
+          notifications: {
+            email: true,
+            push: true,
+            sms: false,
+          },
+          privacy: {
+            shareData: false,
+            marketingEmails: true,
+            analytics: true,
+          },
+        },
+        metadata: {
+          source: 'direct',
+          tags: ['novo-cadastro', 'revendedor'],
+          notes: 'Cliente cadastrado via app',
+          priority: 'medium',
+          customFields: {},
+        },
+      });
+
+      // Dados simulados de resposta da API
+      const mockResponse = {
+        user: {
+          id: newClient.id, // Usa o ID gerado pelo sistema
+          name: newClient.name,
+          email: newClient.email,
+          avatar: newClient.avatar,
+          role: newClient.role,
+          createdAt: newClient.createdAt,
+          lastLogin: newClient.lastLogin,
+        },
+        tokens: {
+          accessToken: `access_token_${Date.now()}`,
+          refreshToken: `refresh_token_${Date.now()}`,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas
+        },
+      };
+
+      // Salva dados no storage
+      await Promise.all([
+        updateAuthTokens(mockResponse.tokens),
+        updateUserProfile(mockResponse.user),
+      ]);
+
+      // Mostra mensagem de sucesso com o ID do cliente
       Alert.alert(
-        'Sucesso!',
-        'Conta criada com sucesso. Faça login para continuar.',
+        'Conta criada com sucesso!',
+        `Bem-vindo ao SkillHub! Sua conta foi criada com ID: ${newClient.id}`,
         [
           {
-            text: 'OK',
-            onPress: () => router.replace('./login'),
+            text: 'Continuar',
+            onPress: () => router.replace('/(tabs)'),
           },
         ]
       );
-    } catch {
+    } catch (error) {
+      console.error('Erro ao criar conta:', error);
       Alert.alert(
-        'Erro no cadastro',
-        'Não foi possível criar sua conta. Tente novamente.'
+        'Erro ao criar conta',
+        error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta. Tente novamente.'
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const updateForm = (field: keyof RegisterForm) => (value: string) => {
+  const updateForm = (field: keyof RegisterForm) => (value: any) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -264,7 +337,7 @@ export default function RegisterScreen() {
         letterSpacing: 0.5,
         fontFamily: 'Inter', // Fonte principal da identidade visual
       }}>
-        SkillHub
+        Criar Conta
       </Text>
 
       {/* Subtítulo seguindo a tipografia da identidade visual */}
@@ -279,7 +352,7 @@ export default function RegisterScreen() {
         letterSpacing: 0.3,
         fontFamily: 'Inter', // Fonte principal da identidade visual
       }}>
-        by Tecskill
+        Junte-se ao SkillHub e comece sua jornada
       </Text>
     </View>
   );
@@ -325,7 +398,7 @@ export default function RegisterScreen() {
           marginBottom: 20, // Espaçamento arejado
         }}>
           <FontAwesome5 
-            name="user-plus" 
+            name="rocket" 
             size={24} 
             color="#1E3A8A" // Azul médio da identidade visual
           />
@@ -338,7 +411,7 @@ export default function RegisterScreen() {
           marginBottom: 12,
           fontFamily: 'Inter', // Fonte principal da identidade visual
         }}>
-          Crie sua conta
+          Comece sua jornada
         </Text>
         <Text style={{
           fontSize: 15,
@@ -348,7 +421,7 @@ export default function RegisterScreen() {
           lineHeight: 22,
           fontFamily: 'Inter', // Fonte principal da identidade visual
         }}>
-          Junte-se à nossa plataforma de revendedores
+          Crie sua conta e tenha acesso a todos os recursos
         </Text>
       </View>
 
@@ -405,7 +478,7 @@ export default function RegisterScreen() {
               fontWeight: '400', // Regular conforme especificação
               fontFamily: 'Inter', // Fonte principal da identidade visual
             }}
-            placeholder="Seu nome completo"
+            placeholder="Digite seu nome completo"
             placeholderTextColor="#6B7280" // Cinza texto da identidade visual
             value={form.name}
             onChangeText={updateForm('name')}
@@ -583,7 +656,7 @@ export default function RegisterScreen() {
             value={form.password}
             onChangeText={updateForm('password')}
             secureTextEntry={!showPassword}
-            autoComplete="password"
+            autoComplete="password-new"
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
@@ -626,7 +699,7 @@ export default function RegisterScreen() {
       </View>
 
       {/* Campo Confirmar Senha seguindo a identidade visual */}
-      <View style={{ marginBottom: 28 }}> {/* Espaçamento arejado */}
+      <View style={{ marginBottom: 24 }}> {/* Espaçamento arejado */}
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -683,7 +756,7 @@ export default function RegisterScreen() {
             value={form.confirmPassword}
             onChangeText={updateForm('confirmPassword')}
             secureTextEntry={!showConfirmPassword}
-            autoComplete="password"
+            autoComplete="password-new"
           />
           <TouchableOpacity
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -725,61 +798,88 @@ export default function RegisterScreen() {
         )}
       </View>
 
-      {/* Checkbox de termos seguindo a identidade visual */}
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 32, // Espaçamento arejado
-        paddingHorizontal: 8,
-      }}>
+      {/* Checkbox Termos e Condições seguindo a identidade visual */}
+      <View style={{ marginBottom: 32 }}> {/* Espaçamento arejado */}
         <TouchableOpacity
-          onPress={() => setAcceptedTerms(!acceptedTerms)}
+          onPress={() => updateForm('acceptTerms')(!form.acceptTerms)}
           style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 8,
+          }}
+        >
+          <View style={{
             width: 24,
             height: 24,
-            borderRadius: 6,
+            borderRadius: 6, // Bordas arredondadas conforme especificação
             borderWidth: 2,
-            borderColor: acceptedTerms ? '#1E3A8A' : 'rgba(30, 58, 138, 0.3)',
-            backgroundColor: acceptedTerms ? '#1E3A8A' : 'transparent',
+            borderColor: form.acceptTerms ? '#1E3A8A' : 'rgba(30, 58, 138, 0.3)', // Azul médio da identidade visual
+            backgroundColor: form.acceptTerms ? '#1E3A8A' : 'transparent', // Azul médio da identidade visual
             justifyContent: 'center',
             alignItems: 'center',
             marginRight: 12,
-          }}
-        >
-          {acceptedTerms && (
-            <FontAwesome5 
-              name="check" 
-              size={12} 
-              color="white" 
-            />
-          )}
+          }}>
+            {form.acceptTerms && (
+              <FontAwesome5 
+                name="check" 
+                size={14} 
+                color="#FFFFFF" // Branco puro da identidade visual
+              />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '400', // Regular conforme especificação
+              color: colorScheme === 'dark' ? '#FFFFFF' : '#0A1A2F', // Cores da identidade visual
+              lineHeight: 20,
+              fontFamily: 'Inter', // Fonte principal da identidade visual
+            }}>
+              Eu aceito os{' '}
+              <Text style={{
+                color: '#1E3A8A', // Azul médio da identidade visual
+                fontWeight: '600', // SemiBold conforme especificação
+                textDecorationLine: 'underline',
+              }}>
+                Termos de Uso
+              </Text>
+              {' '}e{' '}
+              <Text style={{
+                color: '#1E3A8A', // Azul médio da identidade visual
+                fontWeight: '600', // SemiBold conforme especificação
+                textDecorationLine: 'underline',
+              }}>
+                Política de Privacidade
+              </Text>
+            </Text>
+          </View>
         </TouchableOpacity>
-        <Text style={{
-          flex: 1,
-          fontSize: 14,
-          fontWeight: '400', // Regular conforme especificação
-          color: colorScheme === 'dark' ? '#6B7280' : '#6B7280', // Cinza texto da identidade visual
-          lineHeight: 20,
-          fontFamily: 'Inter', // Fonte principal da identidade visual
-        }}>
-          Concordo com os{' '}
-          <Text style={{
-            color: '#1E3A8A', // Azul médio da identidade visual
-            fontWeight: '600',
+        {errors.acceptTerms && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: 8,
+            marginLeft: 36,
           }}>
-            Termos de Uso
-          </Text>
-          {' '}e{' '}
-          <Text style={{
-            color: '#1E3A8A', // Azul médio da identidade visual
-            fontWeight: '600',
-          }}>
-            Política de Privacidade
-          </Text>
-        </Text>
+            <FontAwesome5 
+              name="exclamation-triangle" 
+              size={12} 
+              color="#EF4444" 
+              style={{ marginRight: 6 }}
+            />
+            <Text style={{
+              fontSize: 13,
+              color: '#EF4444',
+              fontWeight: '500', // Medium conforme especificação
+              fontFamily: 'Inter', // Fonte principal da identidade visual
+            }}>
+              {errors.acceptTerms}
+            </Text>
+          </View>
+        )}
       </View>
 
-      {/* Botão de cadastro seguindo a identidade visual */}
+      {/* Botão de Cadastro seguindo a identidade visual */}
       <TouchableOpacity
         onPress={handleRegister}
         disabled={loading}
@@ -789,7 +889,7 @@ export default function RegisterScreen() {
           height: 56,
           justifyContent: 'center',
           alignItems: 'center',
-          marginBottom: 24, // Espaçamento arejado
+          marginBottom: 28, // Espaçamento arejado
           shadowColor: '#1E3A8A',
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: loading ? 0 : 0.15,
@@ -820,7 +920,7 @@ export default function RegisterScreen() {
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <FontAwesome5 
-              name="user-plus" 
+              name="rocket" 
               size={18} 
               color="white" 
               style={{ marginRight: 10 }}
@@ -829,10 +929,12 @@ export default function RegisterScreen() {
               fontSize: 16,
               fontWeight: '600', // SemiBold conforme especificação
               color: 'white',
+              marginRight: 8,
               fontFamily: 'Inter', // Fonte principal da identidade visual
             }}>
               Criar conta
             </Text>
+            <FontAwesome5 name="arrow-right" size={18} color="white" />
           </View>
         )}
       </TouchableOpacity>
@@ -841,7 +943,7 @@ export default function RegisterScreen() {
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 24, // Espaçamento arejado
+        marginBottom: 28, // Espaçamento arejado
       }}>
         <View style={{
           flex: 1,
@@ -870,27 +972,29 @@ export default function RegisterScreen() {
         }} />
       </View>
 
-      {/* Link de voltar para login seguindo a identidade visual */}
+      {/* Botão de Login seguindo a identidade visual */}
       <TouchableOpacity
-        onPress={() => router.back()}
+        onPress={() => router.push('./login')}
         style={{
-          alignItems: 'center',
-          paddingVertical: 16,
+          borderWidth: 2,
+          borderColor: '#1E3A8A', // Azul médio da identidade visual
           borderRadius: 16, // Bordas arredondadas conforme especificação
-          backgroundColor: 'rgba(30, 58, 138, 0.05)', // Azul médio muito sutil
-          flexDirection: 'row',
+          height: 56,
           justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(30, 58, 138, 0.03)', // Azul médio muito sutil
+          flexDirection: 'row',
         }}
       >
         <FontAwesome5 
           name="arrow-left" 
-          size={16} 
+          size={18} 
           color="#1E3A8A" // Azul médio da identidade visual
-          style={{ marginRight: 8 }}
+          style={{ marginRight: 10 }}
         />
         <Text style={{
           fontSize: 16,
-          fontWeight: '500', // Medium conforme especificação
+          fontWeight: '600', // SemiBold conforme especificação
           color: "#1E3A8A", // Azul médio da identidade visual
           fontFamily: 'Inter', // Fonte principal da identidade visual
         }}>

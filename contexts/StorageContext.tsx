@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // ============================================================================
 // TIPOS
@@ -427,3 +427,4 @@ export const useOfflineData = () => {
   const { offlineData, updateOfflineData } = useStorage();
   return { offlineData, updateOfflineData };
 };
+

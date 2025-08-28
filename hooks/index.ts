@@ -1,32 +1,20 @@
 // ============================================================================
-// HOOKS DE STORAGE
-// ============================================================================
-
-export {
-  useLocalStorage,
-  useUserProfile,
-  useAuthTokens,
-  useAppSettings,
-  useUserPreferences,
-  useOfflineData,
-  saveToStorage,
-  getFromStorage,
-  removeFromStorage,
-  clearStorage,
-  getAllKeys,
-  getMultipleValues,
-  setMultipleValues,
-  exportStorageData,
-  importStorageData,
-  cleanupOldData,
-  getStorageStats,
-} from './useLocalStorage';
-
-// ============================================================================
 // HOOKS EXISTENTES
 // ============================================================================
 
-export { default as useColorScheme } from './useColorScheme';
-export { default as useColorScheme as useColorSchemeWeb } from './useColorScheme.web';
-export { default as useThemeColor } from './useThemeColor';
-export { default as useNotifications } from './useNotifications';
+export { useColorScheme } from './useColorScheme';
+export { useColorScheme as useColorSchemeWeb } from './useColorScheme.web';
+export { useNotifications } from './useNotifications';
+export { useThemeColor } from './useThemeColor';
+
+// ============================================================================
+// HOOKS DE AUTENTICAÇÃO
+// ============================================================================
+
+export { useAuth } from './useAuth';
+
+// ============================================================================
+// HOOKS DE CLIENTES
+// ============================================================================
+
+export { useClients } from './useClients';

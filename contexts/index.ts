@@ -3,13 +3,7 @@
 // ============================================================================
 
 export {
-  StorageProvider,
-  useStorage,
-  useUserProfile,
-  useAuthTokens,
-  useAppSettings,
-  useUserPreferences,
-  useOfflineData,
+    StorageProvider, useAppSettings, useAuthTokens, useOfflineData, useStorage, useUserPreferences, useUserProfile
 } from './StorageContext';
 
 // ============================================================================
@@ -17,3 +11,4 @@ export {
 // ============================================================================
 
 // Adicione outros contextos aqui conforme necessário
+
